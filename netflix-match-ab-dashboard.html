@@ -1,0 +1,951 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Netflix Match - A/B Testing Dashboard</title>
+    <link href="https://fonts.googleapis.com/css2?family=Bebas+Neue&family=Netflix+Sans:wght@400;700&display=swap" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        :root {
+            --netflix-red: #E50914;
+            --netflix-dark: #141414;
+            --netflix-gray: #2F2F2F;
+            --netflix-light-gray: #808080;
+            --success-green: #46D369;
+            --warning-yellow: #FFB800;
+        }
+
+        body {
+            background: linear-gradient(to bottom, #000000, #141414);
+            color: #fff;
+            font-family: 'Netflix Sans', 'Helvetica Neue', Helvetica, Arial, sans-serif;
+            line-height: 1.6;
+            min-height: 100vh;
+        }
+
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            padding: 20px;
+        }
+
+        .header {
+            text-align: center;
+            padding: 40px 0;
+            background: linear-gradient(135deg, var(--netflix-dark) 0%, var(--netflix-red) 100%);
+            border-radius: 12px;
+            margin-bottom: 40px;
+            box-shadow: 0 8px 32px rgba(229, 9, 20, 0.3);
+            animation: slideDown 0.8s ease-out;
+        }
+
+        @keyframes slideDown {
+            from {
+                opacity: 0;
+                transform: translateY(-30px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .netflix-logo {
+            font-size: 48px;
+            font-weight: 900;
+            color: var(--netflix-red);
+            letter-spacing: 2px;
+            margin-bottom: 10px;
+            text-shadow: 0 4px 8px rgba(0, 0, 0, 0.5);
+        }
+
+        h1 {
+            font-size: 42px;
+            font-weight: 700;
+            margin-bottom: 10px;
+            text-transform: uppercase;
+            letter-spacing: 3px;
+        }
+
+        .subtitle {
+            font-size: 18px;
+            color: #ddd;
+            font-weight: 300;
+        }
+
+        .step-container {
+            background: var(--netflix-gray);
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            border-left: 5px solid var(--netflix-red);
+            box-shadow: 0 4px 16px rgba(0, 0, 0, 0.4);
+            opacity: 0;
+            animation: fadeInUp 0.6s ease-out forwards;
+        }
+
+        .step-container:nth-child(1) { animation-delay: 0.1s; }
+        .step-container:nth-child(2) { animation-delay: 0.2s; }
+        .step-container:nth-child(3) { animation-delay: 0.3s; }
+        .step-container:nth-child(4) { animation-delay: 0.4s; }
+        .step-container:nth-child(5) { animation-delay: 0.5s; }
+        .step-container:nth-child(6) { animation-delay: 0.6s; }
+        .step-container:nth-child(7) { animation-delay: 0.7s; }
+
+        @keyframes fadeInUp {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .step-header {
+            display: flex;
+            align-items: center;
+            margin-bottom: 20px;
+            border-bottom: 2px solid rgba(229, 9, 20, 0.3);
+            padding-bottom: 15px;
+        }
+
+        .step-number {
+            background: var(--netflix-red);
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 24px;
+            font-weight: 700;
+            margin-right: 20px;
+            box-shadow: 0 4px 12px rgba(229, 9, 20, 0.5);
+        }
+
+        .step-title {
+            font-size: 28px;
+            font-weight: 700;
+            color: var(--netflix-red);
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .metric-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            padding: 20px;
+            border-radius: 8px;
+            border: 1px solid rgba(229, 9, 20, 0.2);
+            transition: transform 0.3s ease, box-shadow 0.3s ease;
+        }
+
+        .metric-card:hover {
+            transform: translateY(-5px);
+            box-shadow: 0 8px 24px rgba(229, 9, 20, 0.4);
+        }
+
+        .metric-label {
+            font-size: 14px;
+            color: var(--netflix-light-gray);
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+
+        .metric-value {
+            font-size: 32px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .metric-change {
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        .positive {
+            color: var(--success-green);
+        }
+
+        .negative {
+            color: var(--netflix-red);
+        }
+
+        .hypothesis-box {
+            background: rgba(229, 9, 20, 0.1);
+            border: 2px solid var(--netflix-red);
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            font-size: 16px;
+            line-height: 1.8;
+        }
+
+        .audience-info {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+        }
+
+        .variations {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .variation-card {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 2px solid var(--netflix-red);
+            border-radius: 8px;
+            padding: 25px;
+            text-align: center;
+        }
+
+        .variation-label {
+            font-size: 20px;
+            font-weight: 700;
+            color: var(--netflix-red);
+            margin-bottom: 15px;
+            text-transform: uppercase;
+        }
+
+        .sample-calculator {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 25px;
+            margin-top: 20px;
+        }
+
+        .calculator-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 12px 0;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .calculator-row:last-child {
+            border-bottom: none;
+            margin-top: 10px;
+            padding-top: 20px;
+            border-top: 2px solid var(--netflix-red);
+        }
+
+        .progress-bar {
+            background: #333;
+            height: 30px;
+            border-radius: 15px;
+            overflow: hidden;
+            margin-top: 20px;
+            position: relative;
+        }
+
+        .progress-fill {
+            background: linear-gradient(90deg, var(--netflix-red) 0%, #ff0000 100%);
+            height: 100%;
+            border-radius: 15px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 700;
+            transition: width 2s ease-out;
+            animation: fillProgress 2s ease-out;
+        }
+
+        @keyframes fillProgress {
+            from { width: 0; }
+        }
+
+        .status-badge {
+            display: inline-block;
+            padding: 8px 16px;
+            border-radius: 20px;
+            font-size: 14px;
+            font-weight: 700;
+            text-transform: uppercase;
+            margin-top: 10px;
+        }
+
+        .status-complete {
+            background: var(--success-green);
+            color: #000;
+        }
+
+        .status-running {
+            background: var(--warning-yellow);
+            color: #000;
+        }
+
+        .chart-container {
+            background: #1a1a1a;
+            border-radius: 8px;
+            padding: 20px;
+            margin-top: 20px;
+            height: 300px;
+            display: flex;
+            align-items: flex-end;
+            justify-content: space-around;
+            gap: 40px;
+        }
+
+        .bar-group {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        .bar {
+            width: 100%;
+            background: linear-gradient(to top, var(--netflix-red), #ff4444);
+            border-radius: 8px 8px 0 0;
+            position: relative;
+            transition: all 0.8s ease-out;
+            animation: growBar 1.5s ease-out;
+        }
+
+        @keyframes growBar {
+            from { height: 0; }
+        }
+
+        .bar-label {
+            margin-top: 10px;
+            font-size: 16px;
+            font-weight: 700;
+            text-align: center;
+        }
+
+        .bar-value {
+            position: absolute;
+            top: -30px;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 18px;
+            font-weight: 700;
+            color: #fff;
+        }
+
+        .statistical-result {
+            background: linear-gradient(135deg, #1a1a1a 0%, #2a2a2a 100%);
+            border: 3px solid var(--success-green);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 20px;
+            text-align: center;
+        }
+
+        .result-title {
+            font-size: 24px;
+            font-weight: 700;
+            color: var(--success-green);
+            margin-bottom: 20px;
+        }
+
+        .result-stats {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-top: 20px;
+        }
+
+        .stat-box {
+            background: rgba(70, 211, 105, 0.1);
+            padding: 15px;
+            border-radius: 8px;
+        }
+
+        .conclusion {
+            background: rgba(229, 9, 20, 0.2);
+            border: 2px solid var(--netflix-red);
+            border-radius: 12px;
+            padding: 30px;
+            margin-top: 30px;
+            text-align: center;
+        }
+
+        .conclusion-title {
+            font-size: 32px;
+            font-weight: 700;
+            color: var(--netflix-red);
+            margin-bottom: 20px;
+            text-transform: uppercase;
+        }
+
+        .conclusion-text {
+            font-size: 18px;
+            line-height: 1.8;
+        }
+
+        .experiment-id {
+            display: inline-block;
+            background: #000;
+            padding: 10px 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            color: var(--netflix-red);
+            border: 1px solid var(--netflix-red);
+            margin: 5px;
+        }
+
+        @media (max-width: 768px) {
+            h1 {
+                font-size: 28px;
+            }
+            .step-title {
+                font-size: 20px;
+            }
+            .metric-grid,
+            .variations,
+            .result-stats {
+                grid-template-columns: 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="netflix-logo">NETFLIX</div>
+            <h1>Netflix Match - A/B Testing Dashboard</h1>
+            <p class="subtitle">Comprehensive 7-Step A/B Test Analysis</p>
+        </div>
+
+        <!-- STEP 1: Success Metrics -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">1</div>
+                <div class="step-title">Success Metric</div>
+            </div>
+            <p style="margin-bottom: 20px; font-size: 16px;">Primary success metric chosen BEFORE running the test to avoid cherry-picking.</p>
+            
+            <div class="metric-grid">
+                <div class="metric-card">
+                    <div class="metric-label">Primary Success Metric</div>
+                    <div class="metric-value" style="color: var(--netflix-red);">TSW</div>
+                    <p style="margin-top: 10px; font-size: 14px;">Time Spent Watching per session</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Metric Type</div>
+                    <div class="metric-value" style="font-size: 24px;">Lagging</div>
+                    <p style="margin-top: 10px; font-size: 14px;">Tied directly to company NSM</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Leading Indicator</div>
+                    <div class="metric-value" style="font-size: 24px;">BTBP ↓</div>
+                    <p style="margin-top: 10px; font-size: 14px;">Browse Time Before Play</p>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Company NSM</div>
+                    <div class="metric-value" style="font-size: 20px;">Watch Time</div>
+                    <p style="margin-top: 10px; font-size: 14px;">Core value Netflix delivers</p>
+                </div>
+            </div>
+
+            <div class="audience-info">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">Why TSW?</h3>
+                <ul style="list-style: none; line-height: 2;">
+                    <li>✓ Directly measures user engagement</li>
+                    <li>✓ Aligns with Netflix's North Star Metric</li>
+                    <li>✓ Leading indicators (Match Rate, BTBP) predict TSW movement</li>
+                    <li>✓ Captures full impact of reducing decision friction</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- STEP 2: Hypothesis -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">2</div>
+                <div class="step-title">Formulate Hypothesis</div>
+            </div>
+            
+            <div class="hypothesis-box">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px; font-size: 22px;">📊 Hypothesis Statement</h3>
+                <p style="font-size: 17px; line-height: 2;">
+                    <strong>IF</strong> we introduce Netflix Match (social swipe-based decision making),<br>
+                    <strong>THEN</strong> we will reduce Browse Time Before Play from 18 min to 5 min,<br>
+                    <strong>RESULTING IN</strong> a 30% increase in Time Spent Watching per session,<br>
+                    <strong>BECAUSE</strong> eliminating human decision friction converts browsing into engagement.
+                </p>
+            </div>
+
+            <div class="metric-grid" style="margin-top: 20px;">
+                <div class="metric-card">
+                    <div class="metric-label">Baseline TSW</div>
+                    <div class="metric-value">60 min</div>
+                    <div class="metric-change">Current average per session</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Target TSW</div>
+                    <div class="metric-value" style="color: var(--success-green);">82 min</div>
+                    <div class="metric-change positive">+36.7% lift required</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Minimum Lift</div>
+                    <div class="metric-value">30%</div>
+                    <div class="metric-change">To justify feature launch</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Confidence Level</div>
+                    <div class="metric-value">85%</div>
+                    <div class="metric-change">Based on RICE scoring</div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 3: Select Audience -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">3</div>
+                <div class="step-title">Select Audience</div>
+            </div>
+            
+            <div class="audience-info">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">Target Population</h3>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Total Users</div>
+                        <div class="metric-value">10,000</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Control Group</div>
+                        <div class="metric-value">5,000</div>
+                        <div class="metric-change">50% random split</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Variant Group</div>
+                        <div class="metric-value">5,000</div>
+                        <div class="metric-change">50% random split</div>
+                    </div>
+                </div>
+
+                <h3 style="color: var(--netflix-red); margin: 25px 0 15px 0;">Audience Criteria</h3>
+                <ul style="list-style: none; line-height: 2;">
+                    <li>✓ Active Netflix users with >2 sessions/month</li>
+                    <li>✓ Users who watch with others (friends/family profiles detected)</li>
+                    <li>✓ Random assignment to eliminate selection bias</li>
+                    <li>✓ Equal distribution across device types (mobile, TV, web)</li>
+                    <li>✓ Geographic diversity across all regions</li>
+                    <li>✓ No prior exposure to matching features</li>
+                </ul>
+            </div>
+        </div>
+
+        <!-- STEP 4: Create Variations -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">4</div>
+                <div class="step-title">Create Variations</div>
+            </div>
+            
+            <div class="variations">
+                <div class="variation-card">
+                    <div class="variation-label">🎬 Control (A)</div>
+                    <h3 style="margin: 15px 0; font-size: 20px;">Standard Netflix Browse</h3>
+                    <ul style="list-style: none; text-align: left; line-height: 2;">
+                        <li>• Traditional recommendation rows</li>
+                        <li>• Individual browsing experience</li>
+                        <li>• Search and scroll interface</li>
+                        <li>• No social features</li>
+                        <li>• Standard watch party option</li>
+                    </ul>
+                    <div class="status-badge" style="background: #666; color: #fff; margin-top: 20px;">BASELINE</div>
+                </div>
+
+                <div class="variation-card" style="border-color: var(--success-green);">
+                    <div class="variation-label" style="color: var(--success-green);">❤️ Variant (B)</div>
+                    <h3 style="margin: 15px 0; font-size: 20px;">Netflix Match</h3>
+                    <ul style="list-style: none; text-align: left; line-height: 2;">
+                        <li>• "Match with someone" CTA on home</li>
+                        <li>• Tinder-style swipe UI for movies</li>
+                        <li>• Real-time match notifications</li>
+                        <li>• "It's a Match!" celebration screen</li>
+                        <li>• Auto-launch synced watch party</li>
+                    </ul>
+                    <div class="status-badge status-complete" style="margin-top: 20px;">TEST VARIATION</div>
+                </div>
+            </div>
+
+            <div class="audience-info" style="margin-top: 25px;">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">Key Differentiators</h3>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Decision Method</div>
+                        <div style="margin-top: 10px;">
+                            <strong>Control:</strong> Individual search<br>
+                            <strong>Variant:</strong> Collaborative swipe
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Social Element</div>
+                        <div style="margin-top: 10px;">
+                            <strong>Control:</strong> None<br>
+                            <strong>Variant:</strong> Real-time matching
+                        </div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Friction Point</div>
+                        <div style="margin-top: 10px;">
+                            <strong>Control:</strong> High (debate/suggest)<br>
+                            <strong>Variant:</strong> Low (gamified)
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
+        <!-- STEP 5: Sample Size Calculation -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">5</div>
+                <div class="step-title">Sample Size Estimation</div>
+            </div>
+            
+            <div class="sample-calculator">
+                <h3 style="color: var(--netflix-red); margin-bottom: 20px; font-size: 22px;">Power Analysis Calculator</h3>
+                
+                <div class="calculator-row">
+                    <span>Baseline Conversion Rate (CVR):</span>
+                    <strong>10%</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Minimum Detectable Effect (MDE):</span>
+                    <strong>30%</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Statistical Power:</span>
+                    <strong>80%</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Significance Level (α):</span>
+                    <strong>0.05 (95% confidence)</strong>
+                </div>
+                <div class="calculator-row" style="background: rgba(229, 9, 20, 0.2); padding: 15px; border-radius: 8px;">
+                    <span style="font-size: 18px;">Required Sample Size per Variant:</span>
+                    <strong style="font-size: 28px; color: var(--netflix-red);">5,000 users</strong>
+                </div>
+            </div>
+
+            <div class="metric-grid" style="margin-top: 25px;">
+                <div class="metric-card">
+                    <div class="metric-label">Total Sample Size</div>
+                    <div class="metric-value">10,000</div>
+                    <div class="metric-change">5K control + 5K variant</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Expected Runtime</div>
+                    <div class="metric-value">14 days</div>
+                    <div class="metric-change">To reach sample size</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Effect Sensitivity</div>
+                    <div class="metric-value">High</div>
+                    <div class="metric-change">Can detect 30%+ lifts</div>
+                </div>
+            </div>
+
+            <div class="audience-info" style="margin-top: 20px;">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">⚠️ Sample Size Considerations</h3>
+                <p style="line-height: 1.8;">
+                    As MDE decreases (e.g., from 30% to 10%), required sample size increases exponentially. 
+                    For Netflix Match, we're targeting a 30% lift in TSW, which requires 5,000 users per variant. 
+                    This balances statistical rigor with practical test duration.
+                </p>
+            </div>
+        </div>
+
+        <!-- STEP 6: Run Test -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">6</div>
+                <div class="step-title">Run Test & Monitor</div>
+            </div>
+
+            <div class="audience-info">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">Experiment Identifiers</h3>
+                <p style="margin-bottom: 15px;">Use these IDs to track test in analytics platforms (Google Analytics, Amplitude, Hashboard):</p>
+                <div style="text-align: center; margin: 20px 0;">
+                    <div class="experiment-id">Experiment ID: NF-5184258</div>
+                    <div class="experiment-id">Control ID: VAR-4569651</div>
+                    <div class="experiment-id">Variant ID: VAR-4569652</div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">Test Progress</h3>
+                <div class="progress-bar">
+                    <div class="progress-fill" style="width: 100%;">
+                        100% Complete - 10,000 / 10,000 users
+                    </div>
+                </div>
+                <div class="status-badge status-complete" style="margin-top: 15px; font-size: 16px;">
+                    ✓ TEST COMPLETE - READY FOR ANALYSIS
+                </div>
+            </div>
+
+            <div class="metric-grid" style="margin-top: 25px;">
+                <div class="metric-card">
+                    <div class="metric-label">Test Duration</div>
+                    <div class="metric-value">14 days</div>
+                    <div class="metric-change">Jan 15 - Jan 28, 2026</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Users Enrolled</div>
+                    <div class="metric-value">10,000</div>
+                    <div class="metric-change positive">✓ Target reached</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Data Quality</div>
+                    <div class="metric-value">98.7%</div>
+                    <div class="metric-change positive">High confidence</div>
+                </div>
+                <div class="metric-card">
+                    <div class="metric-label">Early Peeking</div>
+                    <div class="metric-value">None</div>
+                    <div class="metric-change">No bias introduced</div>
+                </div>
+            </div>
+
+            <div class="audience-info" style="margin-top: 25px; background: rgba(255, 184, 0, 0.1); border: 1px solid var(--warning-yellow);">
+                <h3 style="color: var(--warning-yellow); margin-bottom: 15px;">⚠️ Critical Rule: No Early Peeking!</h3>
+                <p style="line-height: 1.8;">
+                    Even with power analysis, peeking at results before reaching minimum sample size increases 
+                    false positive rates. We waited until 10,000 users completed before analyzing results.
+                    This protects against Type I errors and ensures valid conclusions.
+                </p>
+            </div>
+        </div>
+
+        <!-- STEP 7: Analyze Results -->
+        <div class="step-container">
+            <div class="step-header">
+                <div class="step-number">7</div>
+                <div class="step-title">Analyze Results</div>
+            </div>
+
+            <h3 style="color: var(--netflix-red); margin-bottom: 20px; font-size: 24px;">📊 Primary Metric: Time Spent Watching (TSW)</h3>
+            
+            <div class="chart-container">
+                <div class="bar-group">
+                    <div class="bar" style="height: 200px;">
+                        <div class="bar-value">60 min</div>
+                    </div>
+                    <div class="bar-label">Control<br>(Baseline)</div>
+                </div>
+                <div class="bar-group">
+                    <div class="bar" style="height: 273px; background: linear-gradient(to top, var(--success-green), #5ee37b);">
+                        <div class="bar-value" style="color: var(--success-green);">82 min</div>
+                    </div>
+                    <div class="bar-label" style="color: var(--success-green);">Variant<br>(Netflix Match)</div>
+                </div>
+            </div>
+
+            <div class="statistical-result">
+                <div class="result-title">✅ STATISTICALLY SIGNIFICANT RESULT</div>
+                <p style="font-size: 18px; margin-bottom: 20px;">Netflix Match increased Time Spent Watching by 36.7%</p>
+                
+                <div class="result-stats">
+                    <div class="stat-box">
+                        <div class="metric-label">Absolute Lift</div>
+                        <div class="metric-value" style="color: var(--success-green);">+22 min</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="metric-label">Relative Lift</div>
+                        <div class="metric-value" style="color: var(--success-green);">+36.7%</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="metric-label">Z-Score</div>
+                        <div class="metric-value">9.83</div>
+                        <div class="metric-change">p < 0.0001</div>
+                    </div>
+                    <div class="stat-box">
+                        <div class="metric-label">Confidence</div>
+                        <div class="metric-value">99.9%</div>
+                        <div class="metric-change">Highly significant</div>
+                    </div>
+                </div>
+            </div>
+
+            <div style="margin-top: 30px;">
+                <h3 style="color: var(--netflix-red); margin-bottom: 20px; font-size: 22px;">Supporting Metrics</h3>
+                <div class="metric-grid">
+                    <div class="metric-card">
+                        <div class="metric-label">Browse Time Before Play (BTBP)</div>
+                        <div class="metric-value" style="font-size: 24px;">18m → 4m</div>
+                        <div class="metric-change positive">↓ 77.8% reduction</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Match Mode Adoption</div>
+                        <div class="metric-value">43%</div>
+                        <div class="metric-change positive">Above 40% target</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Match Success Rate</div>
+                        <div class="metric-value">74%</div>
+                        <div class="metric-change positive">Above 70% target</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Sessions with Friends</div>
+                        <div class="metric-value">+156%</div>
+                        <div class="metric-change positive">Social engagement soared</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Swipes per Minute</div>
+                        <div class="metric-value">12.4</div>
+                        <div class="metric-change positive">High engagement</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Time to First Match</div>
+                        <div class="metric-value">2.3 min</div>
+                        <div class="metric-change positive">Fast decisions</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Completion Rate</div>
+                        <div class="metric-value">89%</div>
+                        <div class="metric-change positive">Most finish watching</div>
+                    </div>
+                    <div class="metric-card">
+                        <div class="metric-label">Net Promoter Score (NPS)</div>
+                        <div class="metric-value">+28</div>
+                        <div class="metric-change positive">Users love it</div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="sample-calculator" style="margin-top: 30px;">
+                <h3 style="color: var(--netflix-red); margin-bottom: 20px; font-size: 22px;">Statistical Test Details</h3>
+                
+                <div class="calculator-row">
+                    <span>Test Used:</span>
+                    <strong>Two-Sample Z-Test for Proportions</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Control Group (n=5,000):</span>
+                    <strong>Mean TSW = 60 min, SD = 18.5</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Variant Group (n=5,000):</span>
+                    <strong>Mean TSW = 82 min, SD = 19.2</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Standard Error:</span>
+                    <strong>0.378</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>Z-Score:</span>
+                    <strong>9.83</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>P-Value:</span>
+                    <strong>< 0.0001</strong>
+                </div>
+                <div class="calculator-row">
+                    <span>95% Confidence Interval:</span>
+                    <strong>[21.26, 22.74] minutes</strong>
+                </div>
+                <div class="calculator-row" style="background: rgba(70, 211, 105, 0.2); padding: 15px; border-radius: 8px;">
+                    <span style="font-size: 18px;">Result:</span>
+                    <strong style="font-size: 20px; color: var(--success-green);">REJECT NULL HYPOTHESIS</strong>
+                </div>
+            </div>
+
+            <div class="audience-info" style="margin-top: 25px;">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">🎯 What Caused the Difference?</h3>
+                <div style="line-height: 1.8;">
+                    <p style="margin-bottom: 15px;"><strong style="color: var(--netflix-red);">Not random chance:</strong> With Z = 9.83 and p < 0.0001, there's <0.01% probability this occurred by chance.</p>
+                    
+                    <p style="margin-bottom: 15px;"><strong style="color: var(--netflix-red);">Causal mechanism:</strong> Netflix Match feature eliminated decision friction:</p>
+                    <ul style="list-style: none; margin-left: 20px;">
+                        <li>✓ Gamification made deciding fun (swipe vs. debate)</li>
+                        <li>✓ Mutual agreement algorithm removed conflict</li>
+                        <li>✓ Social element increased commitment to watch</li>
+                        <li>✓ Reduced BTBP freed time for actual watching</li>
+                        <li>✓ "It's a Match" celebration created positive momentum</li>
+                    </ul>
+                </div>
+            </div>
+        </div>
+
+        <!-- Conclusion -->
+        <div class="conclusion">
+            <div class="conclusion-title">🎬 Final Recommendation</div>
+            <div class="conclusion-text">
+                <p style="margin-bottom: 20px; font-size: 20px; font-weight: 700; color: var(--success-green);">
+                    SHIP NETFLIX MATCH TO 100% OF USERS
+                </p>
+                <p style="margin-bottom: 15px;">
+                    With 99.9% statistical confidence, Netflix Match delivers a <strong style="color: var(--netflix-red);">+36.7% lift</strong> in Time Spent Watching, 
+                    exceeding our 30% minimum threshold. The feature reduces decision friction by 78%, 
+                    transforms browsing into engagement, and delivers measurable impact on Netflix's North Star Metric.
+                </p>
+                <p style="font-style: italic; color: #ccc; margin-top: 25px;">
+                    "We didn't improve recommendations. We removed human decision friction."
+                </p>
+            </div>
+
+            <div style="margin-top: 30px; padding-top: 25px; border-top: 2px solid rgba(229, 9, 20, 0.3);">
+                <h3 style="color: var(--netflix-red); margin-bottom: 15px;">Next Steps</h3>
+                <ul style="list-style: none; line-height: 2; text-align: left; max-width: 600px; margin: 0 auto;">
+                    <li>✓ Roll out to 25% of users (Week 1)</li>
+                    <li>✓ Monitor LTV impact over 30 days</li>
+                    <li>✓ Expand to 50% if LTV holds (Week 2)</li>
+                    <li>✓ Full release by Week 4</li>
+                    <li>✓ Iterate on match algorithm based on user feedback</li>
+                </ul>
+            </div>
+        </div>
+
+        <div style="text-align: center; padding: 40px 0; color: var(--netflix-light-gray);">
+            <p>Dashboard Generated: February 1, 2026</p>
+            <p style="margin-top: 10px;">Netflix Discovery & Social Viewing Team</p>
+        </div>
+    </div>
+
+    <script>
+        // Add smooth scroll animations when elements come into view
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.step-container').forEach(el => {
+            observer.observe(el);
+        });
+
+        // Add hover effects to metric cards
+        document.querySelectorAll('.metric-card').forEach(card => {
+            card.addEventListener('mouseenter', function() {
+                this.style.transform = 'translateY(-5px) scale(1.02)';
+            });
+            card.addEventListener('mouseleave', function() {
+                this.style.transform = 'translateY(0) scale(1)';
+            });
+        });
+    </script>
+</body>
+</html>
